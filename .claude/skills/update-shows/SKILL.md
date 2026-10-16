@@ -1,6 +1,6 @@
 ---
 name: update-shows
-description: Add, update, or remove a Minor Mishap Marching Band show on minormishap.com/shows. Uploads the poster into the WordPress "Show Posters" media folder, adds the show card to shows.html, moves finished shows to Past Shows, lints, publishes page 1536 through the WordPress REST API, and opens a PR. Use this whenever the user mentions a new gig, show, parade, event, poster, or schedule change for the band or the shows page, even if they don't say "skill" or name the website. For example "we got booked at X on Saturday", "here's the poster for the canoe show", "the HONK show moved to 3pm", or "update the band schedule".
+description: Add, update, or remove a Minor Mishap Marching Band show on minormishap.com/shows. Cross-checks set times and addresses against the band's Gig-o-Matic feed, uploads the poster into the WordPress "Show Posters" media folder, adds the show card to shows.html, moves finished shows to Past Shows, lints, publishes page 1536 through the WordPress REST API, and opens a PR. Use this whenever the user mentions a new gig, show, parade, event, poster, or schedule change for the band or the shows page, even if they don't say "skill" or name the website. For example "we got booked at X on Saturday", "here's the poster for the canoe show", "the HONK show moved to 3pm", or "update the band schedule".
 ---
 
 # Update the Minor Mishap shows page
@@ -19,6 +19,7 @@ go there, not in the repo.
 |---|---|
 | `wp.py` | REST calls: `whoami`, `pull`, `upload`, `push`, `purge-cache`, `find-media` |
 | `shows.py` | Page edits and the checker: `add`, `remove`, `move-expired`, `lint` |
+| `gigo.py` | Band's public Gig-o-Matic feed: `on DATE`, `list`, `missing shows.html` |
 
 ## 1. Collect the show details
 
@@ -29,6 +30,28 @@ only needs to confirm. A poster is optional, so skip the upload step when there 
 The poster must be a **file path**. An image pasted into chat is not a file the scripts
 can upload. If needed, ask the user to drag the file into the terminal, or offer to use
 the newest image in `~/Downloads`.
+
+Then look up the same date in the band's Gig-o-Matic public feed:
+
+```bash
+python3 -I .claude/skills/update-shows/scripts/gigo.py on 2026-11-07
+```
+
+Each source is trusted for different things:
+- **Gig-o:** the band's set time (`start`/`end`) and the address. Band members keep
+  these current, and they are easy to mistype from a poster.
+- **Poster:** the public event name, description and overall event hours. Gig-o titles
+  are written for band members (e.g. "ACC SEAT rally and march" for "SEAT Street").
+- **Disagreements:** if the two disagree on the date, or no gig matches, stop and ask.
+  If they disagree on the address, show both and ask.
+
+The feed contains only fields the band marked public. Booking messages the user pastes
+are different: they carry band-only notes. Being in the feed does not make a gig
+publishable, though. Private events such as weddings at a home address show up too,
+so never add a show from the feed alone.
+
+If the `minormishap-gigo-feed` Keychain item is missing, `gigo.py` prints how to add it.
+Without it, continue from the poster.
 
 Fill this spec and save it to the scratchpad as `show.json`:
 
@@ -163,3 +186,7 @@ Merging the PR keeps `main` in step with the site.
 
 Give the user the live link, the PR link, and anything you were unsure of, such as a
 guessed `end_date` or a missing address.
+
+Finish with `gigo.py missing shows.html`. It lists confirmed upcoming gigs that have
+no card on the page. Show that list to the user and ask whether to add any. Some are
+private and shouldn't be added.
