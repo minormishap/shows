@@ -50,6 +50,12 @@ Fill this spec and save it to the scratchpad as `show.json`:
 - `locations`, `details` and `features` can be a string or a list. Each list item
   becomes its own line.
 - Leave out any field the user didn't give. Don't invent addresses or times. Ask instead.
+- Put the band's set time in `details`, e.g. `"Mishaps play 10:15am - 11:05am"`, after
+  the event hours. Booking info also has call times, parking, crew and costume notes.
+  Those are for band members only and never go on the public page.
+- Shows on the same day sort only by date and keep the order they were added in.
+  Add them in set-time order. Re-running `add` on a card moves it after the other
+  shows that day.
 
 ## 2. Check credentials and sync with the live page
 
@@ -131,6 +137,10 @@ Then check what visitors actually see:
 ```bash
 curl -s https://www.minormishap.com/shows/ | grep -c "<venue text>"
 ```
+
+Search for a phrase without punctuation. On display, WordPress turns ` - ` into
+`&#8211;`, straight quotes into curly ones, and `&` into `&amp;`, so a grep for
+`noon - 12:30pm` finds nothing even when the card is live.
 
 If that returns 0 while the REST read-back succeeded, WP Super Cache is serving a stale
 copy. Run `wp.py purge-cache` and check again.
